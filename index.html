@@ -8,79 +8,29 @@
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   [hidden] { display: none !important; }
   html, body {
-    width: 100%;
-    min-height: 100%;
-    background: #0d1014;
-    color: #e8ebee;
+    width: 100%; min-height: 100%; background: #0d1014; color: #e8ebee;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased; overscroll-behavior-y: none;
   }
-
   :root {
-    --bg: #0d1014;
-    --surface: rgba(255, 255, 255, 0.04);
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.18);
-    --text: #e8ebee;
-    --sub: #8b9099;
-    --success: #34d399;
-    --error: #f87171;
+    --bg: #0d1014; --surface: rgba(255, 255, 255, 0.04); --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.18); --text: #e8ebee; --sub: #8b9099;
+    --success: #34d399; --error: #f87171;
   }
-
-  .app {
-    max-width: 520px;
-    margin: 0 auto;
-    padding: 40px 24px 60px;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-  }
-
-  header {
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-    align-items: center;
-  }
-
-  .logo {
-    font-size: 34px;
-    font-weight: 700;
-    letter-spacing: -1.5px;
-    color: var(--text);
-    line-height: 1;
-  }
-
+  .app { max-width: 520px; margin: 0 auto; padding: 40px 24px 60px; min-height: 100vh; display: flex; flex-direction: column; gap: 28px; }
+  header { display: flex; flex-direction: column; gap: 22px; align-items: center; }
+  .logo { font-size: 34px; font-weight: 700; letter-spacing: -1.5px; color: var(--text); line-height: 1; }
   main { flex: 1; display: flex; flex-direction: column; }
-
-  .panel {
-    display: none;
-    flex-direction: column;
-    gap: 20px;
-    animation: fadeIn 0.25s ease-out;
-  }
-
+  .panel { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.25s ease-out; }
   .panel.active { display: flex; }
-
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes revealDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
   input[type="number"], input[type="text"] {
-    width: 100%;
-    padding: 18px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    color: var(--text);
-    font-family: inherit;
-    font-size: 16px;
-    outline: none;
-    transition: border-color 0.18s ease;
-    -webkit-appearance: none;
+    width: 100%; padding: 18px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; color: var(--text); font-family: inherit; font-size: 16px; outline: none;
+    transition: border-color 0.18s ease; -webkit-appearance: none;
   }
-
   input[type="number"]:focus, input[type="text"]:focus { border-color: var(--border-strong); }
   input::placeholder { color: var(--sub); }
 
@@ -93,20 +43,17 @@
   .primary-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
 
   .secondary-btn {
-    padding: 13px 26px; background: transparent; border: 1px solid var(--border);
-    color: var(--text); border-radius: 100px; font-family: inherit; font-size: 13px;
-    font-weight: 600; letter-spacing: 0.5px; cursor: pointer; transition: all 0.15s ease; text-align: center;
+    padding: 13px 26px; background: transparent; border: 1px solid var(--border); color: var(--text);
+    border-radius: 100px; font-family: inherit; font-size: 13px; font-weight: 600;
+    letter-spacing: 0.5px; cursor: pointer; transition: all 0.15s ease; text-align: center;
   }
   .secondary-btn:active { background: var(--surface); transform: scale(0.97); }
 
   .boxes-container { display: flex; justify-content: center; gap: 8px; width: 100%; margin-bottom: 10px; flex-wrap: wrap; }
-
-  /* Highly visible boxes */
   .letter-box {
-    width: 48px; height: 56px; background: #1c2026; border: 2px solid #3c4149;
-    border-radius: 12px; color: #ffffff; font-size: 24px; font-weight: 700;
-    text-align: center; text-transform: lowercase; outline: none; transition: all 0.18s ease;
-    caret-color: transparent;
+    width: 48px; height: 56px; background: #1c2026; border: 2px solid #3c4149; border-radius: 12px;
+    color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; text-transform: lowercase;
+    outline: none; transition: all 0.18s ease; caret-color: transparent;
   }
   .letter-box:focus { border-color: #ffffff; background: #2a2f36; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1); }
 
@@ -121,16 +68,10 @@
   }
   .result-word { font-size: 28px; font-weight: 700; letter-spacing: 2px; color: var(--success); text-transform: uppercase; }
   .result-label { font-size: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: 1px; }
-
-  .error-msg {
-    font-size: 13px; color: var(--error); text-align: center; padding: 14px;
-    background: rgba(248, 113, 113, 0.08); border-radius: 12px; border: 1px solid rgba(248, 113, 113, 0.2);
-  }
+  .error-msg { font-size: 13px; color: var(--error); text-align: center; padding: 14px; background: rgba(248, 113, 113, 0.08); border-radius: 12px; border: 1px solid rgba(248, 113, 113, 0.2); }
   
   .loading-text { text-align: center; color: var(--sub); font-size: 14px; padding: 10px; }
-
   .hidden { display: none !important; }
-
   @media (max-width: 400px) {
     .app { padding: 32px 18px 50px; }
     .logo { font-size: 30px; }
@@ -148,8 +89,8 @@
   <main>
     <!-- SETUP PANEL -->
     <section id="panel-setup" class="panel active">
-      <div id="loadingStatus" class="loading-text">lade wörterbuch (1.6m wörter)...</div>
-      <input type="number" id="lengthInput" placeholder="wie viele buchstaben?" min="1" max="40" autocomplete="off" disabled>
+      <div id="loadingStatus" class="loading-text hidden"></div>
+      <input type="number" id="lengthInput" placeholder="wie viele buchstaben?" min="1" max="40" autocomplete="off">
       <button id="startBtn" class="primary-btn" disabled>starten</button>
       <div id="setupError" class="error-msg hidden"></div>
     </section>
@@ -184,14 +125,9 @@
 (() => {
 'use strict';
 
-// State
-let dictionaryByLength = {}; // Optimized storage: { 5: ["hallo", "welt", ...] }
-let dictionaryLoaded = false;
+// Cache loaded dictionaries by length
+let dictionaryByLength = {}; 
 
-// Fallback if fetch fails (e.g., CORS on file://)
-const FALLBACK_SEEDS = "der die und in den von zu das mit sich des auf für ist im dem nicht ein eine als auch es an werden aus er hat dass sie nach wird bei einer um am sind noch wie einem über einen so zum war haben nur oder aber vor zur bis mehr durch man sein wurde sei hatte kann gegen vom können schon wenn habe seine Mark ihre dann unter wir soll ich eines Jahr zwei diese dieser wieder keine Uhr seiner worden will zwischen immer Millionen was sagte gibt alle damit einmal jedoch dies jetzt ganz weil Deutschland Welt Jahr neue drei Berlin gut bereits vier nun schon da müsse müssen wo hallo".split(' ');
-
-// UI Elements
 const panelSetup = document.getElementById('panel-setup');
 const panelGame = document.getElementById('panel-game');
 const lengthInput = document.getElementById('lengthInput');
@@ -209,58 +145,8 @@ const gameError = document.getElementById('gameError');
 const resultContainer = document.getElementById('resultContainer');
 const resultWord = document.getElementById('resultWord');
 
-// --- LOAD DICTIONARY ---
-async function loadDictionary() {
-  try {
-    // Fetch the JSON file
-    const response = await fetch('words.json');
-    if (!response.ok) throw new Error('File not found');
-    
-    // Parse the JSON array of words
-    const rawArray = await response.json();
-    
-    loadingStatus.textContent = "sortiere wörter...";
-
-    // Use a slight delay to allow the UI to update before heavy processing
-    setTimeout(() => {
-      dictionaryByLength = {};
-      for (let i = 0; i < rawArray.length; i++) {
-        const w = rawArray[i].trim().toLowerCase();
-        if (w.length === 0) continue;
-        
-        const len = w.length;
-        if (!dictionaryByLength[len]) dictionaryByLength[len] = [];
-        dictionaryByLength[len].push(w);
-      }
-      
-      dictionaryLoaded = true;
-      loadingStatus.classList.add('hidden');
-      lengthInput.disabled = false;
-      startBtn.disabled = false;
-    }, 50);
-    
-  } catch (err) {
-    console.warn('Could not load words.json. Using fallback.', err);
-    
-    // Fallback for local testing without a server
-    dictionaryByLength = {};
-    for (const w of FALLBACK_SEEDS) {
-      const len = w.length;
-      if (!dictionaryByLength[len]) dictionaryByLength[len] = [];
-      dictionaryByLength[len].push(w);
-    }
-    dictionaryLoaded = true;
-    loadingStatus.classList.add('hidden');
-    lengthInput.disabled = false;
-    startBtn.disabled = false;
-    
-    setupError.textContent = 'Hinweis: words.json konnte nicht geladen werden. Nutze kleine Testliste. (CORS Fehler)';
-    setupError.classList.remove('hidden');
-  }
-}
-
-// Start loading immediately
-loadDictionary();
+let wordLength = 0;
+let boxes = [];
 
 // --- SETUP LOGIC ---
 lengthInput.addEventListener('input', () => {
@@ -269,16 +155,44 @@ lengthInput.addEventListener('input', () => {
   setupError.classList.add('hidden');
 });
 
-startBtn.addEventListener('click', () => {
+startBtn.addEventListener('click', async () => {
   const val = parseInt(lengthInput.value, 10);
   if (!val || val < 1 || val > 40) return;
+
+  // If we haven't loaded this length yet, fetch it now
+  if (!dictionaryByLength[val]) {
+    startBtn.disabled = true;
+    startBtn.textContent = 'lade wörter...';
+    loadingStatus.textContent = 'lade wörterbuch für ' + val + ' buchstaben...';
+    loadingStatus.classList.remove('hidden');
+    
+    try {
+      const response = await fetch(`words-${val}.txt`);
+      if (response.ok) {
+        const text = await response.text();
+        // Split by new lines, trim, and lowercase
+        dictionaryByLength[val] = text.split('\n').map(w => w.trim().toLowerCase()).filter(w => w.length > 0);
+      } else {
+        // File doesn't exist -> no words of this length in dictionary
+        dictionaryByLength[val] = []; 
+      }
+    } catch (err) {
+      console.warn('Fetch failed. Using fallback.', err);
+      // Fallback for local testing without a server
+      dictionaryByLength[val] = []; 
+      setupError.textContent = 'Hinweis: words-' + val + '.txt konnte nicht geladen werden. (CORS Fehler)';
+      setupError.classList.remove('hidden');
+    }
+    
+    loadingStatus.classList.add('hidden');
+    startBtn.textContent = 'starten';
+    startBtn.disabled = false;
+  }
+
   initGame(val);
 });
 
 // --- GAME LOGIC ---
-let wordLength = 0;
-let boxes = [];
-
 function initGame(val) {
   wordLength = val;
   panelSetup.classList.remove('active');
@@ -361,30 +275,19 @@ guessBtn.addEventListener('click', () => {
   gameError.classList.add('hidden');
   resultContainer.classList.add('hidden');
 
-  if (!dictionaryLoaded) {
-    gameError.textContent = 'wörterbuch lädt noch...';
-    gameError.classList.remove('hidden');
-    return;
-  }
-
-  // Gather constraints
   const pattern = boxes.map(b => b.value.toLowerCase().trim());
   const allowedStr = limitedCheckbox.checked ? normalize(limitedInput.value) : '';
   const allowedSet = new Set(allowedStr.split(''));
 
-  // Build Regex (empty boxes become wildcards '.')
   const regexStr = '^' + pattern.map(l => l === '' ? '.' : l).join('') + '$';
   const regex = new RegExp(regexStr, 'i');
 
   let bestWord = null;
-  
-  // Get only the words that match the length
   const candidates = dictionaryByLength[wordLength] || [];
 
   for (const word of candidates) {
     if (!regex.test(word)) continue;
     
-    // Check limited letters
     if (allowedSet.size > 0) {
       let valid = true;
       for (const char of word) {
@@ -393,8 +296,7 @@ guessBtn.addEventListener('click', () => {
       if (!valid) continue;
     }
 
-    // Since the list is alphabetical, the first match is the first alphabetically.
-    // For example, if you type "h a l l", it will match "halle" before "hallo".
+    // First alphabetical match
     bestWord = word;
     break;
   }
@@ -413,7 +315,7 @@ resetBtn.addEventListener('click', () => {
   panelGame.classList.remove('active');
   panelSetup.classList.add('active');
   lengthInput.value = '';
-  startBtn.disabled = false;
+  startBtn.disabled = true;
   lengthInput.focus();
 });
 
