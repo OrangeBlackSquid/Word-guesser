@@ -49,21 +49,17 @@
   }
   .secondary-btn:active { background: var(--surface); transform: scale(0.97); }
 
-  /* The fix for the boxes going left to right */
+  /* Reverted to top-to-bottom wrapping */
   .boxes-container {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 8px;
     width: 100%;
     margin-bottom: 10px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-    scrollbar-width: none; /* Hide scrollbar Firefox */
-    -webkit-overflow-scrolling: touch;
   }
-  .boxes-container::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome/Safari */
   
   .letter-box {
-    flex-shrink: 0; /* Prevent boxes from squishing */
     width: 48px; height: 56px; background: #1c2026; border: 2px solid #3c4149; border-radius: 12px;
     color: #ffffff; font-size: 24px; font-weight: 700; text-align: center; text-transform: lowercase;
     outline: none; transition: all 0.18s ease; caret-color: transparent;
