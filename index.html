@@ -16,7 +16,7 @@
   :root {
     --bg: #0d1014; --surface: rgba(255, 255, 255, 0.04); --border: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.18); --text: #e8ebee; --sub: #8b9099;
-    --success: #34d399; --error: #f87171; --accent: #e8ebee;
+    --success: #34d399; --error: #f87171;
   }
   .app { max-width: 520px; margin: 0 auto; padding: 40px 24px 60px; min-height: 100vh; display: flex; flex-direction: column; gap: 28px; }
   header { display: flex; flex-direction: column; gap: 22px; align-items: center; }
@@ -140,7 +140,7 @@
       </label>
       <input type="file" id="imageInput" accept="image/*" hidden>
       
-      <div id="autoLoading" class="loading-text hidden">analysiere bild... (kann ein paar sekunden dauern)</div>
+      <div id="autoLoading" class="loading-text hidden">analysiere bild...<br>(kann ein paar sekunden dauern)</div>
       <div id="autoError" class="error-msg hidden"></div>
       
       <button id="autoBackBtn" class="secondary-btn" style="margin-top:20px;">zurück</button>
@@ -260,28 +260,47 @@ imageInput.addEventListener('change', async (e) => {
   autoLoading.classList.remove('hidden');
   
   try {
-    // 1. Read image to canvas for length detection
     const img = new Image();
     img.src = URL.createObjectURL(file);
     await new Promise(r => img.onload = r);
     
-    // Detect Word Length from boxes
+    // 1. Detect Word Length by scanning the middle row
     const detectedLength = detectWordLength(img);
     
-    // 2. Run Tesseract OCR to get letters
-    const result = await Tesseract.recognize(img, 'deu', { logger: m => console.log(m) });
-    const text = result.data.text.toUpperCase();
+    // 2. Crop the bottom 35% of the image (where the letters are)
+    const canvas = document.createElement('canvas');
+    const cropY = Math.floor(img.height * 0.65);
+    const cropH = img.height - cropY;
+    canvas.width = img.width;
+    canvas.height = cropH;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, cropY, img.width, cropH, 0, 0, img.width, cropH);
     
-    // Filter for single letters (avoiding numbers and words like "FRAG")
-    // Tesseract sometimes groups letters. We'll extract all uppercase letters.
-    const allowedLetters = text.split('').filter(c => c.match(/[A-ZÄÖÜ]/)).join('');
+    // 3. Run Tesseract on the cropped area
+    const result = await Tesseract.recognize(canvas, 'deu');
     
-    if (!allowedLetters) {
+    // 4. Filter for large single characters only
+    const validLetters = [];
+    for (const word of result.data.words) {
+      if (word.text.length !== 1) continue; // Ignore "Frag", "deine", etc.
+      if (!word.text.match(/[A-ZÄÖÜ]/i)) continue; // Only A-Z
+      
+      // Filter by size (tiles are usually large)
+      const w_height = word.bbox.y1 - word.bbox.y0;
+      if (w_height > 15) {
+        validLetters.push(word.text.toUpperCase());
+      }
+    }
+
+    if (validLetters.length === 0) {
       throw new Error('Keine Buchstaben gefunden.');
     }
 
+    // Use detected length, or fallback to a sensible guess based on letter count
+    const finalLength = detectedLength > 0 ? detectedLength : Math.max(3, Math.ceil(validLetters.length / 1.5));
+    
     // Transition to game
-    initGame(detectedLength > 0 ? detectedLength : 5, allowedLetters);
+    initGame(finalLength, validLetters.join(''));
     
     // Auto-guess immediately
     setTimeout(() => guessBtn.click(), 100);
@@ -296,54 +315,40 @@ imageInput.addEventListener('change', async (e) => {
   }
 });
 
-// Helper: Scans the middle of the image to count empty boxes
+// Helper: Scans the middle of the image to count the empty boxes
 function detectWordLength(img) {
   const canvas = document.createElement('canvas');
   canvas.width = img.width;
   canvas.height = img.height;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0);
-  
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-  
-  // The boxes are typically in the middle vertical section
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
   let bestCount = 0;
-  
-  // Scan horizontal rows
-  for (let y = Math.floor(img.height * 0.4); y < Math.floor(img.height * 0.7); y += 2) {
+  // The empty boxes are typically between 55% and 65% of the height
+  for (let y = Math.floor(img.height * 0.55); y < Math.floor(img.height * 0.65); y += 2) {
     let transitions = 0;
     let inBox = false;
-    
-    // Scan across the row
-    for (let x = 0; x < img.width; x++) {
+    // Scan from 10% to 90% width to avoid side UI
+    for (let x = Math.floor(img.width * 0.1); x < Math.floor(img.width * 0.9); x++) {
       const i = (y * img.width + x) * 4;
-      const r = imageData[i], g = imageData[i+1], b = imageData[i+2];
+      const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
       
-      // Boxes are usually dark blue/grey. Background is darker.
-      // We look for a significant change in brightness or color.
-      // For the provided screenshots, boxes are distinct.
-      const brightness = (r + g + b) / 3;
+      // Empty boxes are dark blue, distinct from the very dark background
+      const isBox = brightness > 20 && brightness < 100;
       
-      // Simple edge detection heuristic: 
-      // If brightness drops significantly, it's a box.
-      // Adjust threshold based on typical "4 Pics 1 Word" UI.
-      const isBoxPixel = brightness < 60; // Dark boxes
-      
-      if (isBoxPixel && !inBox) {
+      if (isBox && !inBox) {
         transitions++;
         inBox = true;
-      } else if (!isBoxPixel && inBox) {
+      } else if (!isBox && inBox) {
         inBox = false;
       }
     }
-    
-    // The row with the most distinct boxes is likely the word boxes
-    // (Avoids the pictures which might have multiple transitions)
-    if (transitions > bestCount && transitions < 20) {
+    // A row with boxes usually has between 3 and 15 distinct transitions
+    if (transitions > bestCount && transitions < 15) {
       bestCount = transitions;
     }
   }
-  
   return bestCount;
 }
 
@@ -480,12 +485,17 @@ function normalize(str) {
 }
 
 // --- GUESSING LOGIC ---
-guessBtn.addEventListener('click', () => {
+guessBtn.addEventListener('click', async () => {
   gameError.classList.add('hidden');
   resultsContainer.classList.add('hidden');
   resultsList.innerHTML = '';
   allMatches = [];
   displayedCount = 0;
+
+  // Ensure dictionary is loaded for this length
+  if (!dictionaryByLength[wordLength]) {
+    await loadDictionaryForLength(wordLength);
+  }
 
   const pattern = boxes.map(b => b.value.toLowerCase().trim());
   const allowedStr = limitedCheckbox.checked ? normalize(limitedInput.value) : '';
