@@ -49,7 +49,7 @@
   }
   .secondary-btn:active { background: var(--surface); transform: scale(0.97); }
 
-  /* Reverted to top-to-bottom wrapping */
+  /* Boxes top to bottom wrapping */
   .boxes-container {
     display: flex;
     flex-wrap: wrap;
@@ -127,7 +127,8 @@
       </label>
       
       <div id="limitedContainer" class="limited-input-container hidden">
-        <input type="text" id="limitedInput" placeholder="erlaubte buchstaben (z.b. aeiou)" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <!-- Updated Placeholder to reflect the new logic -->
+        <input type="text" id="limitedInput" placeholder="erlaubte buchstaben (z.b. hallo)" autocomplete="off" autocapitalize="off" spellcheck="false">
       </div>
 
       <button id="guessBtn" class="primary-btn">raten</button>
@@ -304,7 +305,14 @@ guessBtn.addEventListener('click', () => {
 
   const pattern = boxes.map(b => b.value.toLowerCase().trim());
   const allowedStr = limitedCheckbox.checked ? normalize(limitedInput.value) : '';
-  const allowedSet = new Set(allowedStr.split(''));
+  
+  // NEW: Build a frequency map of the allowed letters instead of a simple Set
+  const allowedFreq = {};
+  if (allowedStr.length > 0) {
+    for (const char of allowedStr) {
+      allowedFreq[char] = (allowedFreq[char] || 0) + 1;
+    }
+  }
 
   const regexStr = '^' + pattern.map(l => l === '' ? '.' : l).join('') + '$';
   const regex = new RegExp(regexStr, 'i');
@@ -315,10 +323,20 @@ guessBtn.addEventListener('click', () => {
   for (const word of candidates) {
     if (!regex.test(word)) continue;
     
-    if (allowedSet.size > 0) {
-      let valid = true;
+    // NEW: Check letter counts for the restricted mode
+    if (allowedStr.length > 0) {
+      const wordFreq = {};
       for (const char of word) {
-        if (!allowedSet.has(char)) { valid = false; break; }
+        wordFreq[char] = (wordFreq[char] || 0) + 1;
+      }
+      
+      let valid = true;
+      for (const char in wordFreq) {
+        // If the word needs more of this letter than the user provided, it's invalid
+        if ((allowedFreq[char] || 0) < wordFreq[char]) {
+          valid = false;
+          break;
+        }
       }
       if (!valid) continue;
     }
