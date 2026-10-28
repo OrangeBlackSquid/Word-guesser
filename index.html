@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wort Rater</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   [hidden] { display: none !important; }
@@ -15,7 +16,7 @@
   :root {
     --bg: #0d1014; --surface: rgba(255, 255, 255, 0.04); --border: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.18); --text: #e8ebee; --sub: #8b9099;
-    --success: #34d399; --error: #f87171;
+    --success: #34d399; --error: #f87171; --accent: #e8ebee;
   }
   .app { max-width: 520px; margin: 0 auto; padding: 40px 24px 60px; min-height: 100vh; display: flex; flex-direction: column; gap: 28px; }
   header { display: flex; flex-direction: column; gap: 22px; align-items: center; }
@@ -37,19 +38,20 @@
   .primary-btn {
     width: 100%; padding: 17px; border: none; background: var(--text); color: var(--bg);
     font-size: 15px; font-weight: 700; letter-spacing: 0.5px; border-radius: 100px;
-    cursor: pointer; font-family: inherit; transition: all 0.15s ease;
+    cursor: pointer; font-family: inherit; transition: all 0.15s ease; text-align: center;
   }
   .primary-btn:active { transform: scale(0.98); opacity: 0.9; }
   .primary-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
 
   .secondary-btn {
-    padding: 13px 26px; background: transparent; border: 1px solid var(--border); color: var(--text);
-    border-radius: 100px; font-family: inherit; font-size: 13px; font-weight: 600;
+    padding: 17px; background: transparent; border: 1px solid var(--border); color: var(--text);
+    border-radius: 100px; font-family: inherit; font-size: 15px; font-weight: 700;
     letter-spacing: 0.5px; cursor: pointer; transition: all 0.15s ease; text-align: center;
   }
   .secondary-btn:active { background: var(--surface); transform: scale(0.97); }
 
-  /* Boxes top to bottom wrapping */
+  .menu-buttons { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
+
   .boxes-container {
     display: flex;
     flex-wrap: wrap;
@@ -70,7 +72,6 @@
   .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--text); cursor: pointer; }
   .limited-input-container { animation: revealDown 0.3s ease-out; }
 
-  /* Result Styles */
   .results-container {
     display: flex;
     flex-direction: column;
@@ -92,6 +93,16 @@
 
   .error-msg { font-size: 13px; color: var(--error); text-align: center; padding: 14px; background: rgba(248, 113, 113, 0.08); border-radius: 12px; border: 1px solid rgba(248, 113, 113, 0.2); }
   .loading-text { text-align: center; color: var(--sub); font-size: 14px; padding: 10px; }
+  
+  .upload-zone {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 56px 24px; border: 2px dashed var(--border-strong); border-radius: 20px;
+    cursor: pointer; transition: all 0.18s ease; color: var(--sub); font-size: 14px;
+    text-align: center; font-weight: 500; letter-spacing: 0.3px;
+  }
+  .upload-zone:active { background: var(--surface); border-color: var(--text); color: var(--text); }
+  .upload-zone svg { width: 44px; height: 44px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; opacity: 0.55; }
+
   .hidden { display: none !important; }
   
   @media (max-width: 400px) {
@@ -109,12 +120,39 @@
   </header>
 
   <main>
-    <!-- SETUP PANEL -->
-    <section id="panel-setup" class="panel active">
+    <!-- START MENU PANEL -->
+    <section id="panel-menu" class="panel active">
+      <div class="menu-buttons">
+        <button id="modeManualBtn" class="secondary-btn">manual</button>
+        <button id="modeAutoBtn" class="primary-btn">auto (bild hochladen)</button>
+      </div>
+    </section>
+
+    <!-- AUTO UPLOAD PANEL -->
+    <section id="panel-auto" class="panel">
+      <label class="upload-zone" for="imageInput">
+        <svg viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>tap to upload screenshot</span>
+      </label>
+      <input type="file" id="imageInput" accept="image/*" hidden>
+      
+      <div id="autoLoading" class="loading-text hidden">analysiere bild... (kann ein paar sekunden dauern)</div>
+      <div id="autoError" class="error-msg hidden"></div>
+      
+      <button id="autoBackBtn" class="secondary-btn" style="margin-top:20px;">zurück</button>
+    </section>
+
+    <!-- SETUP PANEL (Manual) -->
+    <section id="panel-setup" class="panel">
       <div id="loadingStatus" class="loading-text hidden"></div>
       <input type="number" id="lengthInput" placeholder="wie viele buchstaben?" min="1" max="40" autocomplete="off">
       <button id="startBtn" class="primary-btn" disabled>starten</button>
       <div id="setupError" class="error-msg hidden"></div>
+      <button id="setupBackBtn" class="secondary-btn" style="margin-top:20px;">zurück</button>
     </section>
 
     <!-- GAME PANEL -->
@@ -127,7 +165,6 @@
       </label>
       
       <div id="limitedContainer" class="limited-input-container hidden">
-        <!-- Updated Placeholder to reflect the new logic -->
         <input type="text" id="limitedInput" placeholder="erlaubte buchstaben (z.b. hallo)" autocomplete="off" autocapitalize="off" spellcheck="false">
       </div>
 
@@ -150,8 +187,21 @@
 
 let dictionaryByLength = {}; 
 
+// UI Elements
+const panelMenu = document.getElementById('panel-menu');
+const panelAuto = document.getElementById('panel-auto');
 const panelSetup = document.getElementById('panel-setup');
 const panelGame = document.getElementById('panel-game');
+
+const modeManualBtn = document.getElementById('modeManualBtn');
+const modeAutoBtn = document.getElementById('modeAutoBtn');
+const autoBackBtn = document.getElementById('autoBackBtn');
+const setupBackBtn = document.getElementById('setupBackBtn');
+
+const imageInput = document.getElementById('imageInput');
+const autoLoading = document.getElementById('autoLoading');
+const autoError = document.getElementById('autoError');
+
 const lengthInput = document.getElementById('lengthInput');
 const startBtn = document.getElementById('startBtn');
 const setupError = document.getElementById('setupError');
@@ -177,7 +227,127 @@ let allMatches = [];
 let displayedCount = 0;
 const BATCH_SIZE = 10;
 
-// --- SETUP LOGIC ---
+// --- MENU LOGIC ---
+modeManualBtn.addEventListener('click', () => {
+  panelMenu.classList.remove('active');
+  panelSetup.classList.add('active');
+  lengthInput.focus();
+});
+
+modeAutoBtn.addEventListener('click', () => {
+  panelMenu.classList.remove('active');
+  panelAuto.classList.add('active');
+});
+
+autoBackBtn.addEventListener('click', () => {
+  panelAuto.classList.remove('active');
+  panelMenu.classList.add('active');
+  autoError.classList.add('hidden');
+});
+
+setupBackBtn.addEventListener('click', () => {
+  panelSetup.classList.remove('active');
+  panelMenu.classList.add('active');
+  setupError.classList.add('hidden');
+});
+
+// --- AUTO OCR LOGIC ---
+imageInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  autoError.classList.add('hidden');
+  autoLoading.classList.remove('hidden');
+  
+  try {
+    // 1. Read image to canvas for length detection
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    await new Promise(r => img.onload = r);
+    
+    // Detect Word Length from boxes
+    const detectedLength = detectWordLength(img);
+    
+    // 2. Run Tesseract OCR to get letters
+    const result = await Tesseract.recognize(img, 'deu', { logger: m => console.log(m) });
+    const text = result.data.text.toUpperCase();
+    
+    // Filter for single letters (avoiding numbers and words like "FRAG")
+    // Tesseract sometimes groups letters. We'll extract all uppercase letters.
+    const allowedLetters = text.split('').filter(c => c.match(/[A-ZÄÖÜ]/)).join('');
+    
+    if (!allowedLetters) {
+      throw new Error('Keine Buchstaben gefunden.');
+    }
+
+    // Transition to game
+    initGame(detectedLength > 0 ? detectedLength : 5, allowedLetters);
+    
+    // Auto-guess immediately
+    setTimeout(() => guessBtn.click(), 100);
+
+  } catch (err) {
+    console.error(err);
+    autoError.textContent = 'Fehler beim Analysieren. Bitte versuche es manuell.';
+    autoError.classList.remove('hidden');
+  } finally {
+    autoLoading.classList.add('hidden');
+    imageInput.value = '';
+  }
+});
+
+// Helper: Scans the middle of the image to count empty boxes
+function detectWordLength(img) {
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  
+  // The boxes are typically in the middle vertical section
+  let bestCount = 0;
+  
+  // Scan horizontal rows
+  for (let y = Math.floor(img.height * 0.4); y < Math.floor(img.height * 0.7); y += 2) {
+    let transitions = 0;
+    let inBox = false;
+    
+    // Scan across the row
+    for (let x = 0; x < img.width; x++) {
+      const i = (y * img.width + x) * 4;
+      const r = imageData[i], g = imageData[i+1], b = imageData[i+2];
+      
+      // Boxes are usually dark blue/grey. Background is darker.
+      // We look for a significant change in brightness or color.
+      // For the provided screenshots, boxes are distinct.
+      const brightness = (r + g + b) / 3;
+      
+      // Simple edge detection heuristic: 
+      // If brightness drops significantly, it's a box.
+      // Adjust threshold based on typical "4 Pics 1 Word" UI.
+      const isBoxPixel = brightness < 60; // Dark boxes
+      
+      if (isBoxPixel && !inBox) {
+        transitions++;
+        inBox = true;
+      } else if (!isBoxPixel && inBox) {
+        inBox = false;
+      }
+    }
+    
+    // The row with the most distinct boxes is likely the word boxes
+    // (Avoids the pictures which might have multiple transitions)
+    if (transitions > bestCount && transitions < 20) {
+      bestCount = transitions;
+    }
+  }
+  
+  return bestCount;
+}
+
+// --- SETUP LOGIC (Manual) ---
 lengthInput.addEventListener('input', () => {
   const val = parseInt(lengthInput.value, 10);
   startBtn.disabled = !(val > 0 && val <= 40);
@@ -187,7 +357,12 @@ lengthInput.addEventListener('input', () => {
 startBtn.addEventListener('click', async () => {
   const val = parseInt(lengthInput.value, 10);
   if (!val || val < 1 || val > 40) return;
+  await loadDictionaryForLength(val);
+  initGame(val, '');
+});
 
+// --- GAME LOGIC ---
+async function loadDictionaryForLength(val) {
   if (!dictionaryByLength[val]) {
     startBtn.disabled = true;
     startBtn.textContent = 'lade wörter...';
@@ -213,14 +388,13 @@ startBtn.addEventListener('click', async () => {
     startBtn.textContent = 'starten';
     startBtn.disabled = false;
   }
+}
 
-  initGame(val);
-});
-
-// --- GAME LOGIC ---
-function initGame(val) {
+function initGame(val, prefilledLetters) {
   wordLength = val;
   panelSetup.classList.remove('active');
+  panelAuto.classList.remove('active');
+  panelMenu.classList.remove('active');
   panelGame.classList.add('active');
   
   boxesContainer.innerHTML = '';
@@ -273,13 +447,23 @@ function initGame(val) {
     boxes.push(input);
   }
   
+  // Handle prefilled letters
   limitedCheckbox.checked = false;
   limitedInput.value = '';
   limitedContainer.classList.add('hidden');
+  
+  if (prefilledLetters) {
+    limitedCheckbox.checked = true;
+    limitedContainer.classList.remove('hidden');
+    limitedInput.value = prefilledLetters.toLowerCase();
+  }
+  
   resultsContainer.classList.add('hidden');
   gameError.classList.add('hidden');
   
-  boxes[0].focus();
+  if (!prefilledLetters) {
+    boxes[0].focus();
+  }
 }
 
 limitedCheckbox.addEventListener('change', () => {
@@ -306,7 +490,7 @@ guessBtn.addEventListener('click', () => {
   const pattern = boxes.map(b => b.value.toLowerCase().trim());
   const allowedStr = limitedCheckbox.checked ? normalize(limitedInput.value) : '';
   
-  // NEW: Build a frequency map of the allowed letters instead of a simple Set
+  // Build a frequency map of the allowed letters
   const allowedFreq = {};
   if (allowedStr.length > 0) {
     for (const char of allowedStr) {
@@ -323,7 +507,7 @@ guessBtn.addEventListener('click', () => {
   for (const word of candidates) {
     if (!regex.test(word)) continue;
     
-    // NEW: Check letter counts for the restricted mode
+    // Check letter counts for the restricted mode
     if (allowedStr.length > 0) {
       const wordFreq = {};
       for (const char of word) {
@@ -332,7 +516,6 @@ guessBtn.addEventListener('click', () => {
       
       let valid = true;
       for (const char in wordFreq) {
-        // If the word needs more of this letter than the user provided, it's invalid
         if ((allowedFreq[char] || 0) < wordFreq[char]) {
           valid = false;
           break;
@@ -343,7 +526,6 @@ guessBtn.addEventListener('click', () => {
 
     allMatches.push(word);
     
-    // Safety limit: stop finding after 1000 to prevent freezing on huge generic searches
     if (allMatches.length >= 1000) break; 
   }
 
@@ -381,10 +563,10 @@ loadMoreBtn.addEventListener('click', renderMoreResults);
 // --- RESET LOGIC ---
 resetBtn.addEventListener('click', () => {
   panelGame.classList.remove('active');
-  panelSetup.classList.add('active');
+  panelMenu.classList.add('active');
   lengthInput.value = '';
   startBtn.disabled = true;
-  lengthInput.focus();
+  limitedInput.value = '';
 });
 
 })();
