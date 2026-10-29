@@ -263,51 +263,45 @@ imageInput.addEventListener('change', async (e) => {
     img.src = URL.createObjectURL(file);
     await new Promise(r => img.onload = r);
     
-    // 1. Detect Word Length
+    // 1. Detect Word Length (scan the middle area for the empty boxes)
     const detectedLength = detectWordLength(img);
     
-    // 2. Prepare whole image for OCR (Tesseract works best if we threshold)
+    // 2. Crop the bottom area specifically for the letter tiles
     const canvas = document.createElement('canvas');
-    const scale = 1.5; // Scale up for better recognition
-    canvas.width = img.width * scale;
-    canvas.height = img.height * scale;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    // From 60% down to 90% (height), ignore right 15% (buttons)
+    const cropY = Math.floor(img.height * 0.60); 
+    const cropH = Math.floor(img.height * 0.30); 
+    const cropW = Math.floor(img.width * 0.85);
     
-    // Thresholding: Background dark, tiles white.
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imgData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-      // Make the dark background black (0) and bright tiles white (255)
-      const val = avg > 140 ? 255 : 0; 
-      data[i] = val; data[i+1] = val; data[i+2] = val;
-    }
-    ctx.putImageData(imgData, 0, 0);
+    // Scale up 2x for better recognition
+    canvas.width = cropW * 2;
+    canvas.height = cropH * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
 
-    // 3. Run Tesseract
+    // 3. Run Tesseract (No crazy thresholding, just let it do its job)
     const result = await Tesseract.recognize(canvas, 'eng', {
       tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
       tessedit_pageseg_mode: '11' // Sparse text
     });
     
-    // 4. Filter for large single characters
+    // 4. Filter for single capital letters
     const validLetters = [];
     for (const word of result.data.words) {
       if (word.text.length !== 1) continue; 
       if (!word.text.match(/[A-Z]/i)) continue; 
       
-      // Look for the tile's bounding box (height > 20px, roughly square)
+      // Must be a reasonably large tile
       const w = word.bbox.x1 - word.bbox.x0;
       const h = word.bbox.y1 - word.bbox.y0;
-      if (h > 25 && Math.abs(w - h) < h * 0.8) {
+      if (h > 25) {
         validLetters.push(word.text.toUpperCase());
       }
     }
 
-    // Determine fallback length
+    // Fallback length if detection failed or if it doesn't make sense
     let finalLength = detectedLength;
-    if (finalLength < 3) {
+    if (finalLength < 3 || finalLength > 15) {
       finalLength = Math.max(3, Math.round(validLetters.length / 1.8));
     }
     
@@ -335,17 +329,18 @@ function detectWordLength(img) {
 
   let bestCount = 0;
   
-  // Scan middle horizontal section (approx 40% - 60% height)
-  for (let y = Math.floor(img.height * 0.40); y < Math.floor(img.height * 0.60); y += 5) {
+  // Scan exactly in the middle band where the empty boxes usually are (45% to 55%)
+  for (let y = Math.floor(img.height * 0.45); y < Math.floor(img.height * 0.55); y += 2) {
     let transitions = 0;
     let inBox = false;
     
-    for (let x = Math.floor(img.width * 0.1); x < Math.floor(img.width * 0.9); x++) {
+    // Ignore edges of the screen
+    for (let x = Math.floor(img.width * 0.15); x < Math.floor(img.width * 0.85); x++) {
       const i = (y * img.width + x) * 4;
       const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
       
-      // Boxes are lighter than dark background but darker than white
-      const isBox = brightness > 15 && brightness < 100;
+      // The empty boxes have a distinct dark blue (around brightness 20-80)
+      const isBox = brightness > 20 && brightness < 80;
       
       if (isBox && !inBox) {
         transitions++;
@@ -355,8 +350,8 @@ function detectWordLength(img) {
       }
     }
     
-    // Rows with 3 to 15 boxes
-    if (transitions > bestCount && transitions >= 3 && transitions <= 15) {
+    // If we found a row with a realistic number of boxes (4 to 12)
+    if (transitions > bestCount && transitions >= 4 && transitions <= 12) {
       bestCount = transitions;
     }
   }
@@ -478,7 +473,7 @@ function initGame(val, prefilledLetters, isAuto) {
   
   // Show review message if coming from Auto
   if (isAuto) {
-    gameError.textContent = `Auto: ${val} Kästchen, ${prefilledLetters.length} Buchstaben erkannt. Bitte prüfen und "raten" drücken.`;
+    gameError.textContent = `Auto: ${val} Kästchen, ${prefilledLetters.length} Buchstaben erkannt. Bitte prüfen.`;
     gameError.style.color = "var(--success)";
     gameError.style.background = "rgba(52, 211, 153, 0.08)";
     gameError.style.borderColor = "rgba(52, 211, 153, 0.2)";
